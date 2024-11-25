@@ -32,22 +32,24 @@ function functionRefTable() {
  * 2. 由于table目前只能有一个，要么导入js中的表格，要么导出wasm中的表格。
  * 3. 
  */
-function importTable(){
-    WebAssembly.compileStreaming(fetch("import-table.wasm")).then(mod => {
-        const table = new WebAssembly.Table({ initial:2,element:'externref'});
-        table.set(0,()=>101)
-        table.set(1,()=>201)
-        console.log(table.length,table.get(0),table.get(1))
+function importTable() {
+    WebAssembly.compileStreaming(fetch('import-table.wasm')).then(mod => {
+        // 保存js内置函数时element类型只能是externref
+        const table = new WebAssembly.Table({ initial: 2, element: 'externref' });
+        table.set(0, () => 100);
+        table.set(1, () => 200);
         const obj = new WebAssembly.Instance(mod, {
-            js:{
-               table:table 
+            js: {
+                table: table,
+                // wasm不能直接调用table中的externref，只能让wasm获取到table中的externref
+                // 然后调用js函数，并将获取到的externref作为js函数的参数，由js自己来调用
+                apply: (callback) => {
+                    return callback()
+                }
             }
-        });
-        console.log(mod, obj)
-        // 在wasm的table中有两个函数，一个返回100，另一个返回200
-        // 通过wasm暴露的函数可以通过table中的索引值调用函数
-        // console.log(obj.exports.callByIndex(0))
-        // console.log(obj.exports.callByIndex(1))
+        })
+        console.log(mod)
+        console.log(obj.exports.callByIndex(0))
     })
 }
 function main() {
