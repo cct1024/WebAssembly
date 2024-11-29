@@ -52,8 +52,31 @@ function importTable() {
         console.log(obj.exports.callByIndex(0))
     })
 }
+/**
+ * 1. 由share-table.wasm导入table，并在内部保存两个函数，第一个是执行add，第二个执行sum
+ * 2. 由import-share-table.wasm导入共享的table，并通过call_indirect调用共享table的函数
+ */
+async function shareTable() {
+    const table = new WebAssembly.Table({ initial: 2, element: 'anyfunc' });
+    const importObject = {
+        js: {
+            table: table
+        }
+    }
+    const a = await WebAssembly.compileStreaming(fetch('share-table.wasm')).then(mod => {
+        return new WebAssembly.Instance(mod, importObject)
+    })
+    const b = await WebAssembly.compileStreaming(fetch('import-share-table.wasm')).then(mod => {
+        return new WebAssembly.Instance(mod, importObject)
+    })
+    console.log(a,b)
+    console.log(b.exports.callShareFuncByIndex(0,1,2))
+    console.log(b.exports.callShareFuncByIndex(1,10,2))
+
+}
 function main() {
     functionRefTable();
     importTable();
+    shareTable();
 }
 main();
