@@ -5,24 +5,33 @@
  * 4. WebAssembly.Module.imports(mod)返回一个数组，其中包含所有导出的导入的描述
  */
 async function moduleWorker() {
-    const mod = new WebAssembly.Module( await fetch('base-module.wasm').then(res=>res.arrayBuffer()))
+    const mod = new WebAssembly.Module(await fetch('base-module.wasm').then(res => res.arrayBuffer()))
     console.log(mod)
     const worker = new Worker('wasm-worker.js');
     worker.postMessage(mod);
-    const obj = await WebAssembly.instantiate(mod,{
-        imports:{
-            import_func(a){
+    const obj = await WebAssembly.instantiate(mod, {
+        imports: {
+            import_func(a) {
                 console.log(a)
             }
         }
     })
     console.log(obj)
-    console.log(WebAssembly.Module.customSections(mod,"a"))
+    console.log(WebAssembly.Module.customSections(mod, "a"))
     console.log(WebAssembly.Module.exports(mod))
     console.log(WebAssembly.Module.imports(mod))
 }
-
+/**
+ * 1. WebAssembly.Instance对象本身是有状态的，是WebAssembly.Module的一个可执行实例。Instance对象包含所有的WebAssembly导出函数，允许从Javascript调用WebAssembly代码。
+ * 2. WebAssembly.Instance.exports返回一个包含此WebAssembly模块实例所导出的全部成员对象，以便js访问和使用这些成员，这个对象是只读的。
+ */
+async function wasmInstance() {
+    const mod = await WebAssembly.compileStreaming(fetch('simaple-module.wasm'))
+    const obj = new WebAssembly.Instance(mod)
+    console.log(obj, obj.exports,obj.exports.getInt())
+}
 function main() {
     moduleWorker();
+    wasmInstance();
 }
 main();
